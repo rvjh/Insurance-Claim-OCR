@@ -172,10 +172,13 @@ car damaged in collision" ^
 ### Normal flow — FastAPI
 
 ![FastAPI claim response](images/FastAPI%201.png)
+![FastAPI claim response](images/FastAPIResponse1.png)
 
 ### Normal flow — Streamlit claim UI / result
 
 The user app mirrors the API response (status, message, car detected, confidence, timings). Place your screenshots under `images/` if filenames differ, and update links here.
+
+![FastAPI claim response](images/Streamlitop1.png)
 
 ### Admin — FastAPI metrics response
 
