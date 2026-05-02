@@ -169,26 +169,27 @@ car damaged in collision" ^
 
 ## Screenshots
 
+Files in [`images/`](images/) (spaces in URLs are encoded as `%20`):
+
 ### Normal flow — FastAPI
 
-![FastAPI claim response](images/FastAPI%201.png)
-![FastAPI claim response](images/FastAPIResponse1.png)
+![FastAPI — Swagger / interactive docs](images/FastAPI%201.png)
 
-### Normal flow — Streamlit claim UI / result
+![FastAPI — claim JSON response](images/FastAPI%20Response%201.png)
 
-The user app mirrors the API response (status, message, car detected, confidence, timings). Place your screenshots under `images/` if filenames differ, and update links here.
+### Normal flow — Streamlit (claim UI and result)
 
-![FastAPI claim response](images/Streamlitop1.png)
+The user app mirrors the API response (status, message, car detected, confidence, timings).
 
-### Admin — FastAPI metrics response
+![Streamlit — claim submission and result](images/Streamlit%20op1.png)
 
-![FastAPI admin metrics JSON](images/FastAPI%20Admin%20Response%201.png)
+### Admin — FastAPI metrics
+
+![FastAPI — admin metrics JSON](images/FastAPI%20Admin%20Response%201.png)
 
 ### Admin — Streamlit dashboard
 
-![Streamlit admin metrics](images/Streamlit%20Admin%20Dashboard%20Metrices.png)
-
-> **Note:** Image paths assume files live in [`images/`](images/). Encode spaces in filenames in Markdown URLs as `%20` (as above), or rename files without spaces.
+![Streamlit — admin metrics](images/Streamlit%20Admin%20Dashboard%20Metrices.png)
 
 ---
 
