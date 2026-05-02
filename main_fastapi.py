@@ -1,68 +1,116 @@
-from fastapi import FastAPI, UploadFile, Form
-from db.database import init_db, SessionLocal
-from agents.text_agent import process_text
-from agents.vision_agent import analyze_image
-from agents.decision_agent import decide
+from fastapi import FastAPI, UploadFile, File, Form
+import base64
+import time
+
+from sqlalchemy import text as sql_text
+
+from db.database import SessionLocal, init_db
+from services.groq_client import vision_ocr
 from services.guardrails import validate_text, is_safe_output
-import base64, time
+
 
 app = FastAPI()
 init_db()
 
+
 @app.post("/claim")
 async def process_claim(
-    user_id: int,
-    text: str = Form(...),
-    image: UploadFile = Form(...)
+    user_id: int = Form(...),
+    claim_text: str = Form(...),   # ✅ MUST MATCH CURL
+    image: UploadFile = File(...)
 ):
 
     timings = {}
 
-    # Step 1: Text validation
+    # -------------------------
+    # STEP 1: TEXT VALIDATION
+    # -------------------------
     t1 = time.time()
-    valid, errors = validate_text(text)
-    text_data = process_text(text)
+    valid, errors = validate_text(claim_text)
     t2 = time.time()
-    timings["text"] = t2 - t1
+    timings["text_validation"] = round(t2 - t1, 3)
 
-    # Step 2: Image processing
+    if not valid:
+        return {
+            "status": False,
+            "message": "Invalid text input",
+            "errors": errors
+        }
+
+    # -------------------------
+    # STEP 2: IMAGE PROCESSING
+    # -------------------------
     t3 = time.time()
+
     img_bytes = await image.read()
-    img_b64 = base64.b64encode(img_bytes).decode()
+    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
 
-    vision_result = analyze_image(img_b64)
+    vision_result = vision_ocr(img_base64)
+
     t4 = time.time()
-    timings["vision"] = t4 - t3
+    timings["vision"] = round(t4 - t3, 3)
 
-    # Step 3: Decision
+    # -------------------------
+    # SIMPLE DECISION ENGINE
+    # -------------------------
+    car_detected = "car" in vision_result.lower()
+    confidence = 0.93 if car_detected else 0.30
+
     t5 = time.time()
-    status, message = decide(valid, vision_result)
-    t6 = time.time()
-    timings["decision"] = t6 - t5
 
-    # Safety filter
-    if not is_safe_output(message):
-        message = "Response blocked due to safety policy"
+    if car_detected and confidence > 0.75:
+        status = True
+        message = "Claim Successful. Your claim will be deposited within 15 days."
+    else:
         status = False
+        message = "Claim Rejected. No valid car evidence found."
 
+    t6 = time.time()
+    timings["decision"] = round(t6 - t5, 3)
+
+    # -------------------------
+    # SAFETY CHECK
+    # -------------------------
+    if not is_safe_output(message):
+        status = False
+        message = "Blocked due to safety policy"
+
+    # -------------------------
+    # DATABASE LOGGING
+    # -------------------------
+    db = SessionLocal()
+
+    db.execute(
+        sql_text("""
+            INSERT INTO claim_logs
+            (user_id, text_input, image_confidence, car_detected, status, response_message, step_timings)
+            VALUES
+            (:user_id, :text_input, :image_confidence, :car_detected, :status, :response_message, :step_timings)
+        """),
+        {
+            "user_id": user_id,
+            "text_input": claim_text,
+            "image_confidence": confidence,
+            "car_detected": car_detected,
+            "status": str(status),
+            "response_message": message,
+            "step_timings": str(timings)
+        }
+    )
+
+    db.commit()
+
+    # -------------------------
+    # FINAL RESPONSE
+    # -------------------------
     return {
         "status": status,
         "message": message,
-        "timings": timings,
-        "confidence": vision_result["confidence"]
+        "car_detected": car_detected,
+        "confidence": confidence,
+        "timings": timings
     }
 
-@app.get("/admin/stats")
-def admin_stats():
-    db = SessionLocal()
+from admin_api import router as admin_router
 
-    total_users = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
-    active_users = db.execute("SELECT COUNT(*) FROM users WHERE active=1").fetchone()[0]
-
-    logs = db.execute("SELECT * FROM claim_logs").fetchall()
-
-    return {
-        "total_users": total_users,
-        "active_users": active_users,
-        "total_claims": len(logs)
-    }
+app.include_router(admin_router)
