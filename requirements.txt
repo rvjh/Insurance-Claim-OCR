@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+streamlit
+sqlalchemy
+pydantic
+pillow
+opencv-python
+groq
+agno
+python-multipart
