@@ -1,24 +1,47 @@
+import os
+from dotenv import load_dotenv
 from groq import Groq
 
-client = Groq(api_key="YOUR_GROQ_API_KEY")
+# Load environment variables
+load_dotenv()
 
-def chat_completion(prompt):
-    return client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=[{"role": "user", "content": prompt}]
-    ).choices[0].message.content
+# Get API key from .env
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = Groq(api_key=GROQ_API_KEY)
 
 
-def vision_ocr(image_base64):
-    # Groq multimodal vision model
+# -------------------------
+# TEXT MODEL
+# -------------------------
+def chat_completion(prompt: str):
     response = client.chat.completions.create(
-        model="llama-3.2-vision-preview",
+        model="llama3-8b-8192",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+
+# -------------------------
+# OCR / VISION MODEL
+# -------------------------
+def vision_ocr(image_base64: str):
+    response = client.chat.completions.create(
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
         messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Is this a car image? Give confidence 0-1 and extract text."},
-                    {"type": "image_url", "image_url": image_base64}
+                    {
+                        "type": "text",
+                        "text": "Analyze this image. Tell if it is a car image with confidence (0-1), and extract any visible text."
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": image_base64
+                    }
                 ]
             }
         ]
