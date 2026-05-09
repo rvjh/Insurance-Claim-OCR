@@ -203,8 +203,3 @@ The user app mirrors the API response (status, message, car detected, confidence
 - **Observability** — request IDs, structured logging, retries and timeouts on Groq calls.
 - **Streamlit UX** — session state, error handling, configurable `API_URL` via env/secrets.
 
----
-
-## License
-
-Add a license file if you open-source the repo (MIT, Apache-2.0, etc.).
